@@ -1,11 +1,16 @@
+const path = require('path');
+
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const feedRoutes = require('./router/feed');
+
 
 const app = express();
 
 app.use(bodyParser.json()); //application/json
+app.use('/images', express.static(path.join(__dirname, 'images'))) //serve images static
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
@@ -15,4 +20,17 @@ app.use((req, res, next) => {
 
 app.use('/feed', feedRoutes);
 
-app.listen(8014);
+app.use((error, req, res, next) => {
+    console.log(error);
+    const status = error.statusCode || 500;
+    const message = error.message;
+    res.status(status).join({ message: message })
+});
+
+mongoose.connect('mongodb+srv://yapoey:Eio4kjkThTdIoCsS@cluster0.92pax.mongodb.net/blog?retryWrites=true&w=majority')
+    .then(result => {
+        app.listen(8014);
+    })
+    .catch(err => {
+        console.log(err)
+    })
