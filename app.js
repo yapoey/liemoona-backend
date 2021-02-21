@@ -1,12 +1,14 @@
 const path = require('path');
 
+//lib
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
 
+//routes 
 const feedRoutes = require('./router/feed');
-const router = require('./router/feed');
+const authRoutes = require('./router/auth');
 
 
 const app = express();
@@ -39,13 +41,16 @@ app.use((req, res, next) => {
     next();
 });
 
+//forward Requests
 app.use('/feed', feedRoutes);
+app.use('/auth', authRoutes);
 
+//Error Handle
 app.use((error, req, res, next) => {
     console.log(error);
     const status = error.statusCode || 500;
     const message = error.message;
-    res.status(status).join({ message: message })
+    res.status(status).join({ message: message, data: data })
 });
 
 mongoose.connect('mongodb+srv://yapoey:Eio4kjkThTdIoCsS@cluster0.92pax.mongodb.net/blog?retryWrites=true&w=majority')
