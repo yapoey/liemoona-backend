@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/user");
+const Post = require("../models/post");
 
 exports.signup = (req, res, next) => {
     const errors = validationResult(req);
@@ -69,3 +70,29 @@ exports.login = (req, res, next) => {
             next(err);
         });
 };
+
+exports.removeAccount = (req, res, next) => {
+    User.findById(req.userId)
+        .then(user => {
+            if (!user) {
+                const error = new Error('cannot find user.');
+                error.statusCode = 404;
+                throw error;
+            }
+            return Post.deleteMany({ _id: { $in: user.posts } })
+        })
+        .then(result => {
+            return User.findByIdAndRemove(req.userId);
+        })
+        .then(() => {
+            res.status(200).json({
+                message: 'User has been deleted'
+            })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        })
+}

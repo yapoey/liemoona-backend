@@ -50,7 +50,8 @@ app.use((error, req, res, next) => {
     console.log(error);
     const status = error.statusCode || 500;
     const message = error.message;
-    res.status(status).join({ message: message, data: data })
+    const data = error.data;
+    res.status(status).json({ message: message, data: data })
 });
 
 mongoose.connect('mongodb+srv://yapoey:Eio4kjkThTdIoCsS@cluster0.92pax.mongodb.net/blog?retryWrites=true&w=majority')

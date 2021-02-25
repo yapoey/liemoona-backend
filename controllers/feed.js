@@ -3,6 +3,7 @@ const path = require("path");
 const { validationResult } = require("express-validator/check");
 
 const Post = require("../models/post");
+const User = require("../models/user");
 
 exports.getPosts = (req, res, next) => {
     const currentPage = req.query.page || 1;
@@ -46,19 +47,29 @@ exports.createPost = (req, res, next) => {
     const title = req.body.title;
     const content = req.body.content;
     const imageUrl = req.file.path;
+    let creator;
     const post = new Post({
         title: title,
         content: content,
         imageUrl: imageUrl,
-        creator: { name: "yapoey" },
+        creator: req.userId
     });
     post
         .save()
         .then((result) => {
             console.log(result);
+            return User.findById(req.userId)
+        })
+        .then(user => {
+            creator = user;
+            user.posts.push(post);
+            return user.save();
+        })
+        .then(result => {
             res.status(201).json({
                 message: "Post Created Successfully",
-                post: result,
+                post: post,
+                creator: { _id: creator._id, name: creator.name }
             });
         })
         .catch((err) => {
@@ -117,6 +128,11 @@ exports.updatePost = (req, res, next) => {
                 error.statusCode = 404;
                 throw error;
             }
+            if (post.creator.toString() !== req.userId) {
+                error = new Error('Not Authrized');
+                error.statusCode = 403;
+                throw error;
+            }
             if (imageUrl !== post.imageUrl) {
                 clearImage(post.imageUrl);
             }
@@ -127,7 +143,7 @@ exports.updatePost = (req, res, next) => {
                 res.status(200).json({ message: "Updated", post: result });
             });
         })
-        .catch((arr) => {
+        .catch((err) => {
             if (!err.statusCode) {
                 err.statusCode = 500;
             }
@@ -144,11 +160,23 @@ exports.deletePost = (req, res, next) => {
                 error.statusCode = 404;
                 throw error;
             }
+            if (post.creator.toString() !== req.userId) {
+                error = new Error('Not Authrized');
+                error.statusCode = 403;
+                throw error;
+            }
             //chcek logged users
             clearImage(post.imageUrl);
             return Post.findByIdAndRemove(postId);
         })
-        .then((result) => {
+        .then(() => {
+            return User.findById(req.userId);
+        })
+        .then(user => {
+            user.posts.pull(postId);
+            return user.save();
+        })
+        .then(result => {
             res.status(200).json({ message: "deleted" });
         })
         .catch((err) => {
@@ -157,6 +185,34 @@ exports.deletePost = (req, res, next) => {
             }
             next(err);
         });
+};
+
+exports.addComment = (req, res, next) => {
+    const postId = req.params.postId;
+    const commentText = req.body.commentText;
+
+    Post.findById(postId)
+        .then((post) => {
+            if (!post) {
+                const error = new Error("could not find post");
+                error.statusCode = 404;
+                throw error;
+            }
+            post.comments.push({ user: req.userId, text: commentText });
+            return post.save();
+        })
+        .then(result => {
+            console.log(result);
+            res.status(200).json({
+                message: 'Comment added'
+            })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        })
 };
 
 const clearImage = (filePath) => {
