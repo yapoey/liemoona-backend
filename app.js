@@ -5,6 +5,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
+const cors = require('cors');
 
 //routes 
 const feedRoutes = require('./router/feed');
@@ -34,12 +35,8 @@ const fileFilter = (req, file, cb) => {
 app.use(bodyParser.json()); //application/json
 app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image')); // image will the feild in the request
 app.use('/images', express.static(path.join(__dirname, 'images'))) //serve images static path
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-});
+app.use(cors())
+
 
 //forward Requests
 app.use('/feed', feedRoutes);

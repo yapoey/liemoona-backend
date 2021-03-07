@@ -20,8 +20,11 @@ router.put('/signup', [
     })
     .normalizeEmail(),
     body('password').trim().isLength({ min: 5 }),
-    body('name').trim().not().isEmpty()
+    body('name').trim().not().isEmpty(),
+    body('userName').trim().isLength({ min: 5})
 ], authController.signup);
+
+router.get('/check/:email/available', authController.checkEmail)
 
 router.post('/login', authController.login)
 

@@ -16,6 +16,7 @@ exports.signup = (req, res, next) => {
     const email = req.body.email;
     const name = req.body.name;
     const password = req.body.password;
+    const userName = req.body.userName;
     bcrypt
         .hash(password, 12)
         .then((hashedPw) => {
@@ -23,11 +24,12 @@ exports.signup = (req, res, next) => {
                 email: email,
                 password: hashedPw,
                 name: name,
+                userName: userName
             });
             return user.save();
         })
         .then((result) => {
-            res.status(201).json({ message: "User created", userId: result._id });
+            res.status(201).json({ message: "User created", userId: result._id, userName: result.userName });
         })
         .catch((err) => {
             if (!err.statusCode) {
@@ -59,9 +61,9 @@ exports.login = (req, res, next) => {
             }
             const token = jwt.sign({
                 email: loadedUser.email,
-                userId: loadedUser._id.toString()
+                userId: loadedUser._id.toString(),
             }, 'yapoeySecret', { expiresIn: '1h' });
-            res.status(200).json({ token: token, userId: loadedUser._id.toString() })
+            res.status(200).json({ token: token, userId: loadedUser._id.toString(), userName: loadedUser.userName })
         })
         .catch((err) => {
             if (!err.statusCode) {
@@ -70,6 +72,17 @@ exports.login = (req, res, next) => {
             next(err);
         });
 };
+
+exports.checkEmail = (req, res, next) => {
+    const email = req.params.email
+    User.findOne({email: email})
+    .then(user => {
+        const available = user? true : false
+        res.status(200).json({
+            email: available
+        })
+    })
+}
 
 exports.removeAccount = (req, res, next) => {
     User.findById(req.userId)
@@ -95,4 +108,4 @@ exports.removeAccount = (req, res, next) => {
             }
             next(err);
         })
-}
+};

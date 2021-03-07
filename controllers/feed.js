@@ -7,7 +7,7 @@ const User = require("../models/user");
 
 exports.getPosts = (req, res, next) => {
     const currentPage = req.query.page || 1;
-    const perPage = 2;
+    const perPage = 10;
     let totalItems;
     Post.find()
         .countDocuments()
@@ -121,6 +121,7 @@ exports.updatePost = (req, res, next) => {
         error.statusCode = 442;
         throw error;
     }
+    console.log(postId)
     Post.findById(postId)
         .then((post) => {
             if (!post) {
@@ -136,6 +137,7 @@ exports.updatePost = (req, res, next) => {
             if (imageUrl !== post.imageUrl) {
                 clearImage(post.imageUrl);
             }
+        
             post.title = title;
             post.content = content;
             post.imageUrl = imageUrl;
@@ -190,6 +192,13 @@ exports.deletePost = (req, res, next) => {
 exports.addComment = (req, res, next) => {
     const postId = req.params.postId;
     const commentText = req.body.commentText;
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const error = new Error("Validation failed.");
+        error.statusCode = 442;
+        throw error;
+    }
 
     Post.findById(postId)
         .then((post) => {
